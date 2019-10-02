@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>PS450X: Basic Data Manipulation</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <style type="text/css">
+      @import url('https://fonts.googleapis.com/css?family=Arvo|Fira+Code|Fira+Sans:400,500,700|Libre+Franklin:400,500,700&display=swap');
+
+      body { font-family: 'Fira Sans';
+              line-height: 1.4em;
+              font-size: 1.4em; }
+      h1, h2, h3 {
+        font-family: 'Arvo', sans-serif;
+        font-weight: normal;
+        font-size: 1.5em;
+        line-height: 1.4em;
+      }
+      .remark-code, .remark-inline-code { 
+        font-family: 'Fira Code';
+        line-height: 1.3em; }
+
+      .fn_highlight{
+        font-family: 'Fira Code';
+        line-height: 1.3em;
+        background: #FFFBCC;
+        padding: 4px;
+      }  
+
+      strong {
+        font-weight: 700;
+      }
+
+      .institution {
+        font-size: 0.8em;
+        background: #eeeeee;
+        padding: 3px;
+        color: #333333;
+        line-height: 1.2em; 
+      }
+
+      .course{
+        font-size: 2em;
+        color: #c41e3a;
+        font-family: 'Arvo';
+      }
+
+      .keypoint{
+        background: #eeeeee;
+        color: #333333;
+        font-size: 1em;
+        padding: 5px;
+        padding-top: 0px;
+        line-height: 1.2em;
+        font-weight: 500;
+        padding-left: 20px;
+      }
+
+      .keypoint_title{
+        background: #c41e3a;
+        color: #ffffff;
+        font-weight: 700;
+        padding: 5px 20px 5px 20px ;
+        margin-top: 0px;
+      }
+
+      .challenge{
+        background: #eeeeee;
+        color: #333333;
+        font-size: 1em;
+        padding: 5px;
+        padding-top: 0px;
+        line-height: 1.2em;
+        font-weight: 500;
+        padding-left: 20px;
+      }
+
+      .challenge_title{
+        background: #076891;
+        color: #ffffff;
+        font-weight: 700;
+        padding: 5px 20px 5px 20px ;
+        margin-top: 0px;
+      }
+
+       .data_table td{
+        color: #333333;
+        font-family: 'Fira Code';
+        font-size: 0.8em;
+        padding: 0px 40px 0px 0px ;
+        padding-bottom: -10px;
+        margin: -10px; 
+        line-height: 1.2em;
+      }
+
+       .data_table th{
+        color: #333333;
+        font-family: 'Fira Code';
+        font-weight: 700;
+        font-size: 0.9em;
+        padding: 0px 40px 0px 0px ;
+        padding-bottom: 8px;
+        margin-bottom: 10px; 
+        border-bottom: #333333 1px solid;
+        margin: -10px; 
+        line-height: 1em;
+        border-collapse: separate;
+        border-spacing: 15px;
+      }
+
+      .data_table table{
+        border-top: #333333 1px solid;
+        padding-top: 5px;
+        border-bottom: #333333 1px solid;
+      }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+# Basic Data Manipulation and Cleaning
+
+.course[450X]
+
+.institution[__Stanford University__ 
+
+Department of Political Science  
+  
+---  
+
+Toby Nowacki]
+
+
+
+???
+
+Notes for the _first_ slide!
+
+---
+
+# Plan
+
+1. Introduction: Working with data
+2. What is tidy data?
+3. Inspecting data
+4. Data types, structures, and selecting data
+5. Working with `data.frame`
+    1. New variables
+    2. Naming variables
+    3. Apply family
+7. Reshaping data (in base `R`)
+8. Merging data
+
+---
+
+# Introduction
+
+How do we use data sets?
+
+* summary statistics
+    * (conditional) averages, standard deviations, trends, scatterplots...
+* statistical analysis
+    * regressions, machine learning, ...
+* individual datapoints
+    * looking up individual 'cases'
+
+.keypoint[.keypoint_title[Key point #1]
+
+Data can be stored in many different ways.  
+It is almost always stored as a matrix.
+
+What is the ***best*** way to organise data?]
+
+---
+
+layout: true
+
+# Why we need tidy data
+
+.challenge[.challenge_title[Challenge #1]
+
+Which of the following is best for:
+
+(a) calculating the mean GDP?  
+(b) fitting a regression specification:  `\(GDP_{it} = \alpha + \beta_1 population_{it}\)`
+]
+
+---
+
+class: data_table
+
+Dataset 1:
+
+| Country          | Year              | Variable   | Value      |
+|:---------------- |:----------------- |:---------- |:---------- |
+| United Kingdom   | 2005              | GDP        | 22,000     |
+| United Kingdom   | 2005              | Population | 40,000,000 |
+| United Kingdom   | 2006              | GDP        | 23,000     |
+| United Kingdom   | 2006              | Population | 42,000,000 |
+| Ireland, Rep.    | 2005              | GDP        | 18,000     |
+| Ireland, Rep.    | 2005              | Population | 3,000,000  |
+| Ireland, Rep.    | 2006              | GDP        | 19,000     |
+| Ireland, Rep.    | 2006              | Population | 3,400,000  |
+
+
+---
+
+class: data_table
+
+Dataset 2:
+
+| Country          | Variable   | Value      |
+|:---------------- |:---------- |:---------- |
+| United Kingdom   | Year       | 2005       |
+| United Kingdom   | GDP        | 22,000     |
+| United Kingdom   | Population | 40,000,000 |
+| United Kingdom   | Year       | 2006       |
+| United Kingdom   | GDP        | 23,000     |
+| United Kingdom   | Population | 42,000,000 |
+| Ireland, Rep.    | Year       | 2005       |
+| Ireland, Rep.    | GDP        | 18,000     |
+| Ireland, Rep.    | Population | 3,000,000  |
+| Ireland, Rep.    | Year       | 2006       |
+| Ireland, Rep.    | GDP        | 19,000     |
+| Ireland, Rep.    | Population | 3,400,000  |
+
+---
+
+class: data_table
+
+Dataset 3:
+
+| Country          | Year              | GDP        | Population |
+|:---------------- |:----------------- |:---------- |:---------- |
+| United Kingdom   | 2005              | 22,000     | 40,000,000 |
+| United Kingdom   | 2006              | 23,000     | 42,000,000 |
+| Ireland, Rep.    | 2005              | 18,000     | 3,000,000 |
+| Ireland, Rep.    | 2006              | 19,000     | 3,400,000 |
+
+---
+
+layout: false
+
+# Why we need tidy data
+
+.keypoint[.keypoint_title[Key Point #2]
+
+A dataset is tidy iff:
+1. Each variable has its own column;
+2. Each observation forms its own row;
+3. Each type of observational unit forms a table (matrix).
+]
+
+Of the three previous examples, only dataset 3 is ***tidy***.
+
+We can easily perform analyses with tidy data:
+
+```r
+mean(df$GDP) #unconditional mean
+mean(df$GDP[df$Year == 2005, ]) # mean in Year 2005
+mod1 <- lm(GDP ~ Population, df) # simple regression
+
+```
+
+---
+
+class: center, middle
+
+## The objective of this class is to give you tools to inspect, transform, and manipulate your data.
+
+---
+
+class: center, middle
+
+## Inspecting data
+
+---
+
+# Inspecting data
+
+* .fn_highlight[?function] yields extensive documentation on how to use a specific function: arguments, default values, examples.
+
+```r
+?head
+
+# head                   package:utils                   R Documentation               
+                            
+# Return the First or Last Part of an Object
+                                          
+# Description:                
+                            
+#      Returns the first or last parts of a vector, matrix, table, data
+#      frame or function.  Since ‘head()’ and ‘tail()’ are generic
+#      functions, they may also have been extended to other classes.
+                                                               
+# Usage:
+                                                               
+#      head(x, ...)
+#      ## Default S3 method:
+#      head(x, n = 6L, ...)
+```
+
+---
+
+# Inspecting data
+
+* .fn_highlight[head(x)] prints the first n (by default 5) rows of your table.
+
+
+```r
+data(Seatbelts)
+df <- as.data.frame(Seatbelts)
+head(df, n = 6)
+
+#   DriversKilled drivers front rear   kms PetrolPrice         
+# 1           107    1687   867  269  9059   0.1029718
+# 2            97    1508   825  265  7685   0.1023630
+# 3           102    1507   806  319  9963   0.1020625
+# 4            87    1385   814  407 10955   0.1008733         
+# 5           119    1632   991  454 11823   0.1010197
+# 6           106    1511   945  427 12391   0.1005812
+#   VanKilled law
+# 1        12   0
+# 2         6   0
+# 3        12   0
+# 4         8   0
+# 5        10   0
+# 6        13   0
+```
+
+---
+
+# Inspecting data
+
+* .fn_highlight[str(x)] gives you a compact overview over all subelements of `x`.
+
+
+```r
+str(df)
+
+# 'data.frame':   192 obs. of  8 variables:                    
+#  $ DriversKilled: num  107 97 102 87 119 106 110 106 107 134 ...                                                          
+#  $ drivers      : num  1687 1508 1507 1385 1632 ...          
+#  $ front        : num  867 825 806 814 991 ...               
+#  $ rear         : num  269 265 319 407 454 427 522 536 405 437 ...                                                        
+#  $ kms          : num  9059 7685 9963 10955 11823 ...
+#  $ PetrolPrice  : num  0.103 0.102 0.102 0.101 0.101 ...
+#  $ VanKilled    : num  12 6 12 8 10 13 11 6 10 16 ...
+#  $ law          : num  0 0 0 0 0 0 0 0 0 0 ...
+```
+
+---
+
+# Inspecting data
+
+* .fn_highlight[class(x)] returns the class / type of the object in question.
+
+```r
+class(df)
+# [1] "data.frame"  
+
+class(df$drivers)
+# [1] "numeric" 
+```
+
+* .fn_highlight[dim(x)] returns the dimensions of the dataframe (rows / columns).
+
+```r
+dim(df)
+# [1] 192   8   
+```
+
+---
+
+class: center, middle
+
+## Data types, structures and selecting data
+
+---
+
+# Data types (most common)
+
+* .fn_highlight[numeric]: `2.5`, `4.944`, ...
+
+* .fn_highlight[integer]: `1L`, `2L`, ...
+
+* .fn_highlight[character]: `"Banana"`, ...
+
+* .fn_highlight[logical]: `TRUE`, `FALSE` 
+
+* possible to convert between them using simple functions, e.g. `as.numeric(x)`.
+
+---
+
+# Data structures
+
+* .fn_highlight[vector] is a series of elements of the same data type (e.g., numeric, logical...)
+
+```r
+ex_vec <- c(1L, 2L, 3L)
+ex_vec
+# [1] 1 2 3  
+class(ex_vec)
+# [1] "integer"  
+ex_vec <- as.character(ex_vec)
+ex_vec
+# [1] "1" "2" "3" 
+class(ex_vec)
+# [1] "character"  
+```
+
+* select items within vector using .fn_highlight[x[i]] or .fn_highlight[x[i:j]].
+
+---
+
+# Data structures
+
+* .fn_highlight[list] is a container for other data structures.
+* items within lists can be different data types.
+
+```r
+ex_list <- list("ABC", c(2, 4, 6), c("DEF", "GHI"))
+ex_list
+# [[1]]                                                        
+# [1] "ABC"                                                    
+
+# [[2]]
+# [1] 2 4 6                                                    
+
+# [[3]]                                                        
+# [1] "DEF" "GHI" 
+```
+
+* select items within list using .fn_highlight[x[[i]]] or .fn_highlight[x[i:j]].
+* you can also select objects *within* list items: `x[[i]][k]`
+
+---
+
+# Data structures
+
+* .fn_highlight[matrix] is a two-dimensional vector object.
+* all elements within the matrix have to be of the same data type.
+
+```r
+ex_mat <- matrix(1:9, nrow = 3, ncol = 3)
+ex_mat
+
+#     [,1] [,2] [,3]                                          
+# [1,]    1    4    7
+# [2,]    2    5    8
+# [3,]    3    6    9
+```
+
+* select items within matrix using .fn_highlight[x[rows, columns]].
+* selection can be individual rows/columns, or vector (i.e., multiple ones).
+* if all columns, or all rows, write `x[rows, ]` or  `x[columns, ]`.
+
+---
+
+layout: true
+
+# Data structures
+
+* .fn_highlight[data.frame] is similar to a matrix, but different columns can have different data types.
+---
+
+* columns (= variables) have names!
+
+```r
+ex_df <- data.frame(col1 = 1:3, 
+                    col2 = c("A", "B", "C"), 
+                    col3 = c(T, F, F))
+ex_df
+#   col1 col2  col3                                            
+# 1    1    A  TRUE
+# 2    2    B FALSE
+# 3    3    C FALSE
+
+
+```
+
+---
+
+* subsetting / selection works the same as with matrices
+* in addition, also possible to select columns by name:
+
+```r
+ex_df$col1
+# [1] 1 2 3  
+
+ex_df[, c("col1", "col2")]     
+#   col1 col2                                                  
+# 1    1    A
+# 2    2    B
+# 3    3    C 
+```
+
+---
+
+layout: false
+
+# Data structures
+
+* this overview only covers the basics. For more depth and additional functions (e.g., naming columns, lists, etc.), see:
+
+.center[[Data Types and Structures](https://swcarpentry.github.io/r-novice-inflammation/13-supp-data-structures/)]
+
+* becomes important when creating own datasets or running more complex calculations
+
+* most functions to convert one data type into another are intuitive. Plenty of online resources, too.
+
+* packages and extensions to base `R` will introduce additional data types and structures (e.g., tibbles; panel data, document-term matrices)
+
+* special data types (e.g., dates) covered separately!
+
+---
+
+class: center, middle
+
+## More tricks with `data.frame`
+
+
+---
+
+# Creating and modifying variables
+
+* variables in dataframes are selected using the .fn_highlight[$] operator, e.g., `df$var1`.
+
+* the same works for creating new variables within a `data.frame`:
+
+```r
+df$newvar <- c("a", "b", "c")
+```
+
+* recall all variable names in a dataframe using .fn_highlight[names()]:
+
+```r
+names(ex_df)
+# [1] "col1" "col2" "col3"
+```
+* specific packages to make this easier (covered in later classes)
+
+---
+
+layout:true
+
+# The apply family
+
+.challenge[.challenge_title[Challenge #2]
+
+How do we transform each row of a dataset separately?
+]
+
+---
+
+* most straightforward way: for-loop
+
+```r
+new_list <- list()
+for(i in 1:nrow(df)){
+  new_list[[i]] <- transf_fun(df[i, ])
+}
+new_df <- do.call(rbind, new_list)
+```
+
+* cumbersome coding
+* requires new object in advance (list)
+
+---
+
+* instead: .fn_highlight[apply] family.
+* takes each element of object passed to apply and transforms it separately
+* `lapply, sapply, apply` differ in syntax and output but underlying logic is the same
+
+```r
+out <- apply(df, 1, function(x) transf_fun(x))
+```
+* usually more shorthand than for-loop and sometimes more performant
+
+
+---
+
+layout:false
+
+class: center, middle
+
+## Reshaping and merging data
+
+---
+
+# Reshaping data
+
+* difference between long and wide format
+
+![Long and wide data](wide_long.png)
+
+---
+
+# Reshaping data
+
+* .fn_highlight[reshape] is key for our purposes
+* Example from `jozef.io`:
+
+```r
+gdi_long_full <- reshape(data = gdi         # data.frame in wide format to be reshaped
+                       , direction = "long" # still going from wide to long
+                       , varying = 2:23     # columns that will be stacked into 1
+                       , idvar = "country"  # what identifies the rows?
+                       , v.names = "GDI"    # how will the column with values be called
+                       , timevar = "year"   # how will the time column be called
+                       , times = 1995:2016  # what are the values for the timevar column
+                       )
+```
+
+* for further documentation, see help files
+* again, we will cover packages that make this a lot easier!
+
+---
+
+# Merging data
+
+.challenge[.challenge_title[Challenge #3]
+
+How do we merge two datasets together by a joint variable?
+]
+
+---
+
+# Merging data
+
+.challenge[.challenge_title[Challenge #3]
+
+How do we merge two datasets together by a joint variable?
+]
+
+* Two datasets, `dfA` and `dfB`, to be merged on variable `key`.
+* `for` loop?
+
+```r
+dfA$newvar1 <- NA
+dfA$newvar2 <- NA
+
+for(i in 1:nrow(dfA)){
+  row_key <- dfA$key[i]
+  matching_row <- which(dfB$key == i)
+  dfA$newvar1[i] <- dfB$newvar1[matching_row]
+  dfA$newvar2[i] <- dfB$newvar2[matching_row]
+}
+```
+
+---
+
+# Merging data
+
+* .fn_highlight[rbind] and .fn_highlight[cbind] 'glue' two datasets together -- identical dimensions required!
+* .fn_highlight[merge] combines two datasets by a unique key
+* You can also merge on multiple variables at the same time.
+
+```r
+dfA <- data.frame(V1 = c(1, 2, 3), 
+                  V2 = c("A", "B", "C"))
+dfB <- data.frame(V2 = c("B", "C", "A"), 
+                  V3 = c("Banana", "Canteloupe", "Apple"))
+
+dfbind <- cbind(dfA, dfB)
+dfM <- merge(dfA, dfB, by = c("V2"))
+```
+
+---
+
+# Merging data
+
+```r
+dfbind
+#  V1 V2 V2         V3
+#1  1  A  B     Banana
+#2  2  B  C Canteloupe
+#3  3  C  A      Apple
+
+dfM
+#   V2 V1         V3
+# 1  A  1      Apple
+# 2  B  2     Banana
+# 3  C  3 Canteloupe
+```
+
+---
+
+# Types of merges
+
+![Types of merges](merge_sets.jpg)
+
+```r
+merge(dfA, dfB, all.x = TRUE, all.y = FALSE)
+``` 
+
+* Cartesian join: if DF1 has `\(N\)` rows and DF2 has `\(M\)` rows, then the Cartesian merge produces all `\(N \times M\)` combinations:
+
+```r
+merge(dfA, dfB, by = NULL)
+```
+
+---
+
+# Conclusion
+
+* Introduction to loading and inspecting data
+* Introduction to data structures and types
+    * **structures** refer to the way data are organised (vector, table, ...)
+    * **types** refer to the class of data that is stored (numeric, ...)
+    * There's a parallel world inside `R` for advanced users (object-oriented programming, see [here](http://adv-r.had.co.nz/OO-essentials.html#oo))
+* Introduction to tidy data, and how to get there
+
+* **Roadmap**:
+    * How packages like `tidyverse` can make our lives a lot easier...
+    * How to make visually appealing plots in `ggplot2`
+    * Introduction to functional programming
+    * Work beyond `R`: How to set up your work environment and store your data
+
+---
+
+# Resources
+
+**For `tidyverse` and other applied stuff**
+* [R for Data Science](https://r4ds.had.co.nz) by Garrett Grolemund and Hadley Wickham.
+* [Exploratory Data Analysis with R](https://bookdown.org/rdpeng/exdata/) by Roger D. Peng.
+* [ggplot2: Elegant Graphics for Data Analysis](https://ggplot2-book.org) by Hadley Wickham.
+
+**For a deeper dive into programming**
+* [Advanced R](https://adv-r.hadley.nz) by Hadley Wickham.
+
+
+
+</textarea>
+    <script src="http://gnab.github.io/remark/downloads/remark-latest.min.js" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_HTML&delayStartupUntil=configured" type="text/javascript"></script>
+    <script type="text/javascript">
+      var slideshow = remark.create();
+
+      // Setup MathJax
+      MathJax.Hub.Config({
+          tex2jax: {
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+          },
+          "HTML-CSS" : {
+            availableFonts : ["STIX"],
+            preferredFont : "STIX",
+            webFont : "STIX-Web",
+            imageFont : null
+          }
+      });
+
+      MathJax.Hub.Configured();
+    </script>
+  </body>
+</html>
