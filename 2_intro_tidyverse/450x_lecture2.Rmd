@@ -25,7 +25,12 @@ Toby Nowacki]
 
 # Overview
 
-List of topics here.
+1. Advantages of `tidyverse`
+2. Introduction to the `tidyverse` universe
+3. The pipe and other operators
+4. `dplyr`
+5. `tidyr`
+6. `purrr`
 
 ---
 
@@ -95,7 +100,7 @@ candidates[which(candidates %in% senators)]
 ---
 
 
-# `dplyr`
+# A classic data aggregation problem
 
 .challenge[.challenge_title[Challenge #2.1]
 
@@ -149,6 +154,8 @@ flights %>%
 
 ---
 
+# `dplyr` example
+
 .challenge[.challenge_title[Example #2.1]
 
 Are longer-distance flights more delayed?
@@ -159,6 +166,8 @@ Are longer-distance flights more delayed?
 
 ---
 
+# `dplyr` example
+
 Let's only select the variables that we really need:
 
 ```{r}
@@ -168,6 +177,8 @@ mini_flights %>% head
 ```
 
 ---
+
+# `dplyr` example
 
 Only keep January to March and summarise:
 
@@ -182,8 +193,10 @@ agg_flights
 
 ---
 
+# `dplyr` example
+
 Plot the data points:
-```{r Plot, fig.height = 6, fig.width = 6}
+```{r Plot, fig.height = 4, fig.width = 4}
 library(ggplot2)
 ggplot(agg_flights, aes(x = mean_dist, y = mean_del)) +
 	geom_point(aes(colour = carrier)) +
@@ -192,7 +205,7 @@ ggplot(agg_flights, aes(x = mean_dist, y = mean_del)) +
 
 ---
 
-# tidyr
+# `tidyr`
 
 * Remember the tidy data exercise from last class?
 * .fn_highlight[pivot_longer()], .fn_highlight[pivot_wider()] for recasting data frames 
@@ -200,6 +213,8 @@ ggplot(agg_flights, aes(x = mean_dist, y = mean_del)) +
 * Can also be combined with `dplyr` calls and pipes
 
 ---
+
+# `tidyr` example
 
 ```{r}
 data("mtcars")
@@ -212,7 +227,7 @@ mtcars %>%
 
 ---
 
-# More tidyverse things
+# More `tidyverse` things
 
 * `tidyverse` functions refer to variable names directly 
     * (the dataframe is already piped in)
@@ -222,7 +237,7 @@ mtcars %>%
 
 ---
 
-# purrr
+# `purrr`
 
 * writing functions avoids repetition and provides clarity, e.g.,
 
@@ -238,7 +253,7 @@ ols_coefs(x, y)
 
 ---
 
-# purrr
+# `purrr`
 
 * applying functions to each row or element can be done with a for-loop or apply family
     * you've probably done that already
@@ -247,18 +262,102 @@ ols_coefs(x, y)
 ```{r}
 no_list <- list(8, 16, 99)
 lapply(no_list, sqrt)
+```
 
+---
+
+# `purrr`
+
+```{r}
 map(no_list, sqrt)
 
 ```
 
 * Doesn't seem very useful yet...
 * Range of `map`-type functions in `purrr` that make life a lot easier!
+* Different `map`-type functions return different object classes (e.g., vector, data.frame...)
 
 
 ---
 
-# purrr makes your life easy!
+# `purrr` example
 
-[Link to Example](https://jennybc.github.io/purrr-tutorial/ls01_map-name-position-shortcuts.html)
+[Link to GOT Example](https://jennybc.github.io/purrr-tutorial/ls01_map-name-position-shortcuts.html)
+
+---
+
+```{r}
+library(repurrrsive)
+got_chars %>% head
+
+```
+
+---
+
+```{r}
+library(repurrrsive)
+got_chars %>% str
+
+```
+
+---
+
+.challenge[.challenge_title[Challenge #2.2]
+
+Get the names of all characters in the dataframe.
+]
+
+---
+
+.challenge[.challenge_title[Challenge #2.2]
+
+Get the names of all characters in the dataframe.
+]
+
+```{r}
+got_chars %>% map("name")
+
+```
+
+---
+
+.challenge[.challenge_title[Challenge #2.2]
+
+Get the names of all characters in the dataframe.
+]
+
+```{r}
+got_chars %>% map_chr("name")
+
+```
+
+---
+
+.challenge[.challenge_title[Challenge #2.3]
+
+Assemble a dataframe with all the key information.
+]
+
+---
+
+.challenge[.challenge_title[Challenge #2.3]
+
+Assemble a dataframe with all the key information.
+]
+
+```{r, message = FALSE}
+library(magrittr)
+got_chars %>%
+	map_dfr(extract, c("name", "culture", "gender", "born", "alive"))
+```
+
+
+---
+
+# Conclusion
+
+* Base R is *sufficient*, but often not very comfortable.
+* `tidyverse` provides a useful array of functions to help us out.
+* The pipe, `%>%`, allows for combining multiple data wrangling operations into one workflow.
+* As always, pick whatever method works best for your specific problem: `tidyverse` might not always be the best!
 
