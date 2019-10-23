@@ -1,0 +1,264 @@
+---
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+    css: ["style.css"]
+---
+
+class: center, middle
+
+# Introduction to Tidyverse
+
+.course[450X]
+
+.institution[__Stanford University__ 
+
+Department of Political Science  
+  
+---  
+
+Toby Nowacki]
+
+---
+
+# Overview
+
+List of topics here.
+
+---
+
+# Why not Base R?
+
+* Limited amount of functions, often cumbersome
+
+```{r}
+df <- data.frame(A = c(1, 2, 3), B = c("A", "B", "C"), C = c("T", "F", "F"))
+df$D <- c(4, 5, 6)
+df$E <- c(7, 8, 9)
+df$F <- df$D - df$E
+print(df)
+```
+
+* Looking for a clean, intuitive and readable way to perform multiple operations at once
+* `data.table` provides a great alternative to tidyverse if you prefer more concise (and somewhat more performant) code
+
+---
+
+# The tidyverse Family
+
+* .fn_highlight[dplyr]: functions for data manipulation and aggregation
+	* `mutate()`, `select()`, `filter()`, `summarise()`, `arrange()`
+* .fn_highlight[tidyr]: functions to bring your data into the tidy format
+	* `pivot_longer()`, `pivot_wider()`, `unnest*()`, `separate()`, `unite()`
+* .fn_highlight[ggplot2]: functions for data visualisation ('grammar of graphics') -- separate workshop on that!
+	* `ggplot()`
+* .fn_highlight[purrr]: functions for functional programming and avoiding for-loops
+	* `map()`
+
+---
+
+# Your best friend, the pipe
+
+* `R` comes with a bunch of standard operators: `+`, `-`, etc...
+* `tidyverse` supplies the pipe: `%>%` 
+* allows you to forward the output from one function straight into another.
+* Works with both `tidyverse` and other functions
+
+```{r}
+out <- c("30", "40", "60")
+out2 <- as.numeric(out)
+mean(out2)
+```
+
+```{r message = FALSE}
+library(tidyverse)
+c("30", "40", "60") %>% as.numeric %>% mean
+```
+
+---
+
+# Set intersection
+
+* Another useful operator is `%in%`.
+* Returns a logical vector with `TRUE` when element in first object is also contained in second object.
+
+```{r}
+candidates <- c("biden", "warren", "sanders", "buttigieg", "harris")
+senators <- c("warren", "sanders", "romney", "gilibrand", "schumer")
+
+candidates %in% senators
+candidates[which(candidates %in% senators)]
+```
+
+---
+
+
+# `dplyr`
+
+.challenge[.challenge_title[Challenge #2.1]
+
+Get the mean and standard deviation of flight delays by month
+]
+
+
+```{r}
+library(nycflights13)
+head(flights)
+```
+
+---
+
+# Base `R` solution
+
+```{r}
+mean_list <- list()
+sd_list <- list()
+month <- unique(flights$month)
+for(y in month){
+	df_sub <- subset(flights, month == y)
+	mean_list[y] <- mean(df_sub$dep_delay, na.rm = T)
+	sd_list[y] <- sd(df_sub$dep_delay, na.rm = T)
+}
+unlist(mean_list)
+unlist(sd_list)
+```
+
+---
+
+# `dplyr` solution
+
+```{r}
+flights %>%
+	group_by(month) %>% 
+	summarise(mean = mean(dep_delay, na.rm = TRUE),
+		sd = sd(dep_delay, na.rm = TRUE))
+
+```
+
+---
+
+# `dplyr` functions
+
+* .fn_highlight[select()] selects given columns from `data.frame` or `tibble`
+* .fn_highlight[mutate()] adds additional columns
+* .fn_highlight[filter()] selects rows that satisfy specified condition
+* .fn_highlight[by_group()] carries out further commands by group
+* .fn_highlight[summarise()] returns the results of aggregate functions
+
+---
+
+.challenge[.challenge_title[Example #2.1]
+
+Are longer-distance flights more delayed?
+]
+
+* Maybe yes, because delays 'rack up' and greater risk of unforeseen emergencies with 
+* Maybe no, because longer flights are run by bigger airlines and are more valuable, so are therefore prioritised
+
+---
+
+Let's only select the variables that we really need:
+
+```{r}
+mini_flights <- flights %>% 
+	dplyr::select(month, dep_delay, distance, dest, carrier)
+mini_flights %>% head
+```
+
+---
+
+Only keep January to March and summarise:
+
+```{r}
+agg_flights <- mini_flights %>% mutate(ln_dist = log(distance)) %>%
+	filter(month %in% 1:3) %>% 
+	group_by(carrier, month) %>% 
+	summarise(mean_del = mean(dep_delay, na.rm = TRUE),
+		mean_dist = mean(ln_dist, na.rm = TRUE))
+agg_flights
+```
+
+---
+
+Plot the data points:
+```{r Plot, fig.height = 6, fig.width = 6}
+library(ggplot2)
+ggplot(agg_flights, aes(x = mean_dist, y = mean_del)) +
+	geom_point(aes(colour = carrier)) +
+	labs(x = "log(Flight distance)", y = "Delay")
+```
+
+---
+
+# tidyr
+
+* Remember the tidy data exercise from last class?
+* .fn_highlight[pivot_longer()], .fn_highlight[pivot_wider()] for recasting data frames 
+* Sometimes data manipulation or visualisation is much simpler if you recast your data frame!
+* Can also be combined with `dplyr` calls and pipes
+
+---
+
+```{r}
+data("mtcars")
+mtcars %>% head
+mtcars %>% 
+	dplyr::select(mpg, cyl, disp) %>% 
+	mutate(cartype = rownames(.)) %>%
+	pivot_longer(mpg:disp) %>% head(., n = 5)
+```
+
+---
+
+# More tidyverse things
+
+* `tidyverse` functions refer to variable names directly 
+    * (the dataframe is already piped in)
+    * $\rightarrow$ more on quotations and quasi-quations in [Advanced R](https://adv-r.hadley.nz/)
+* Refer to piped object with .fn_highlight[.]
+* Refer to a range of variables (in order) with colon .fn_highlight[var1:var4]
+
+---
+
+# purrr
+
+* writing functions avoids repetition and provides clarity, e.g.,
+
+```{r}
+ols_coefs <- function(x, y){
+	solve(t(x) %*% x) %*% t(x) %*% y
+}
+
+x <- matrix(c(1, 2, 3, 5, 5, 6), nrow = 3, ncol = 2)
+y <- matrix(c(8, 8.5, 0), nrow = 3, ncol = 1)
+ols_coefs(x, y)
+```
+
+---
+
+# purrr
+
+* applying functions to each row or element can be done with a for-loop or apply family
+    * you've probably done that already
+* .fn_highlight[map()] family provides even more convenient functions
+
+```{r}
+no_list <- list(8, 16, 99)
+lapply(no_list, sqrt)
+
+map(no_list, sqrt)
+
+```
+
+* Doesn't seem very useful yet...
+* Range of `map`-type functions in `purrr` that make life a lot easier!
+
+
+---
+
+# purrr makes your life easy!
+
+[Link to Example](https://jennybc.github.io/purrr-tutorial/ls01_map-name-position-shortcuts.html)
+

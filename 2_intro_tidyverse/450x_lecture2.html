@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+  <head>
+    <title>450x_lecture2.utf8.md</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="style.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+
+
+class: center, middle
+
+# Introduction to Tidyverse
+
+.course[450X]
+
+.institution[__Stanford University__ 
+
+Department of Political Science  
+  
+---  
+
+Toby Nowacki]
+
+---
+
+# Overview
+
+List of topics here.
+
+---
+
+# Why not Base R?
+
+* Limited amount of functions, often cumbersome
+
+
+```r
+df &lt;- data.frame(A = c(1, 2, 3), B = c("A", "B", "C"), C = c("T", "F", "F"))
+df$D &lt;- c(4, 5, 6)
+df$E &lt;- c(7, 8, 9)
+df$F &lt;- df$D - df$E
+print(df)
+```
+
+```
+##   A B C D E  F
+## 1 1 A T 4 7 -3
+## 2 2 B F 5 8 -3
+## 3 3 C F 6 9 -3
+```
+
+* Looking for a clean, intuitive and readable way to perform multiple operations at once
+* `data.table` provides a great alternative to tidyverse if you prefer more concise (and somewhat more performant) code
+
+---
+
+# The tidyverse Family
+
+* .fn_highlight[dplyr]: functions for data manipulation and aggregation
+	* `mutate()`, `select()`, `filter()`, `summarise()`, `arrange()`
+* .fn_highlight[tidyr]: functions to bring your data into the tidy format
+	* `pivot_longer()`, `pivot_wider()`, `unnest*()`, `separate()`, `unite()`
+* .fn_highlight[ggplot2]: functions for data visualisation ('grammar of graphics') -- separate workshop on that!
+	* `ggplot()`
+* .fn_highlight[purrr]: functions for functional programming and avoiding for-loops
+	* `map()`
+
+---
+
+# Your best friend, the pipe
+
+* `R` comes with a bunch of standard operators: `+`, `-`, etc...
+* `tidyverse` supplies the pipe: `%&gt;%` 
+* allows you to forward the output from one function straight into another.
+* Works with both `tidyverse` and other functions
+
+
+```r
+out &lt;- c("30", "40", "60")
+out2 &lt;- as.numeric(out)
+mean(out2)
+```
+
+```
+## [1] 43.33333
+```
+
+
+```r
+library(tidyverse)
+c("30", "40", "60") %&gt;% as.numeric %&gt;% mean
+```
+
+```
+## [1] 43.33333
+```
+
+---
+
+# Set intersection
+
+* Another useful operator is `%in%`.
+* Returns a logical vector with `TRUE` when element in first object is also contained in second object.
+
+
+```r
+candidates &lt;- c("biden", "warren", "sanders", "buttigieg", "harris")
+senators &lt;- c("warren", "sanders", "romney", "gilibrand", "schumer")
+
+candidates %in% senators
+```
+
+```
+## [1] FALSE  TRUE  TRUE FALSE FALSE
+```
+
+```r
+candidates[which(candidates %in% senators)]
+```
+
+```
+## [1] "warren"  "sanders"
+```
+
+---
+
+
+# `dplyr`
+
+.challenge[.challenge_title[Challenge #2.1]
+
+Get the mean and standard deviation of flight delays by month
+]
+
+
+
+```r
+library(nycflights13)
+head(flights)
+```
+
+```
+## # A tibble: 6 x 19
+##    year month   day dep_time sched_dep_time dep_delay arr_time
+##   &lt;int&gt; &lt;int&gt; &lt;int&gt;    &lt;int&gt;          &lt;int&gt;     &lt;dbl&gt;    &lt;int&gt;
+## 1  2013     1     1      517            515         2      830
+## 2  2013     1     1      533            529         4      850
+## 3  2013     1     1      542            540         2      923
+## 4  2013     1     1      544            545        -1     1004
+## 5  2013     1     1      554            600        -6      812
+## 6  2013     1     1      554            558        -4      740
+## # … with 12 more variables: sched_arr_time &lt;int&gt;, arr_delay &lt;dbl&gt;,
+## #   carrier &lt;chr&gt;, flight &lt;int&gt;, tailnum &lt;chr&gt;, origin &lt;chr&gt;, dest &lt;chr&gt;,
+## #   air_time &lt;dbl&gt;, distance &lt;dbl&gt;, hour &lt;dbl&gt;, minute &lt;dbl&gt;,
+## #   time_hour &lt;dttm&gt;
+```
+
+---
+
+# Base `R` solution
+
+
+```r
+mean_list &lt;- list()
+sd_list &lt;- list()
+month &lt;- unique(flights$month)
+for(y in month){
+	df_sub &lt;- subset(flights, month == y)
+	mean_list[y] &lt;- mean(df_sub$dep_delay, na.rm = T)
+	sd_list[y] &lt;- sd(df_sub$dep_delay, na.rm = T)
+}
+unlist(mean_list)
+```
+
+```
+##  [1] 10.036665 10.816843 13.227076 13.938038 12.986859 20.846332 21.727787
+##  [8] 12.611040  6.722476  6.243988  5.435362 16.576688
+```
+
+```r
+unlist(sd_list)
+```
+
+```
+##  [1] 36.39031 36.26655 40.13097 42.96626 39.35283 51.45694 51.61608
+##  [8] 37.66692 35.61480 29.67176 27.58836 41.87681
+```
+
+---
+
+# `dplyr` solution
+
+
+```r
+flights %&gt;%
+	group_by(month) %&gt;% 
+	summarise(mean = mean(dep_delay, na.rm = TRUE),
+		sd = sd(dep_delay, na.rm = TRUE))
+```
+
+```
+## # A tibble: 12 x 3
+##    month  mean    sd
+##    &lt;int&gt; &lt;dbl&gt; &lt;dbl&gt;
+##  1     1 10.0   36.4
+##  2     2 10.8   36.3
+##  3     3 13.2   40.1
+##  4     4 13.9   43.0
+##  5     5 13.0   39.4
+##  6     6 20.8   51.5
+##  7     7 21.7   51.6
+##  8     8 12.6   37.7
+##  9     9  6.72  35.6
+## 10    10  6.24  29.7
+## 11    11  5.44  27.6
+## 12    12 16.6   41.9
+```
+
+---
+
+# `dplyr` functions
+
+* .fn_highlight[select()] selects given columns from `data.frame` or `tibble`
+* .fn_highlight[mutate()] adds additional columns
+* .fn_highlight[filter()] selects rows that satisfy specified condition
+* .fn_highlight[by_group()] carries out further commands by group
+* .fn_highlight[summarise()] returns the results of aggregate functions
+
+---
+
+.challenge[.challenge_title[Example #2.1]
+
+Are longer-distance flights more delayed?
+]
+
+* Maybe yes, because delays 'rack up' and greater risk of unforeseen emergencies with 
+* Maybe no, because longer flights are run by bigger airlines and are more valuable, so are therefore prioritised
+
+---
+
+Let's only select the variables that we really need:
+
+
+```r
+mini_flights &lt;- flights %&gt;% 
+	dplyr::select(month, dep_delay, distance, dest, carrier)
+mini_flights %&gt;% head
+```
+
+```
+## # A tibble: 6 x 5
+##   month dep_delay distance dest  carrier
+##   &lt;int&gt;     &lt;dbl&gt;    &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;  
+## 1     1         2     1400 IAH   UA     
+## 2     1         4     1416 IAH   UA     
+## 3     1         2     1089 MIA   AA     
+## 4     1        -1     1576 BQN   B6     
+## 5     1        -6      762 ATL   DL     
+## 6     1        -4      719 ORD   UA
+```
+
+---
+
+Only keep January to March and summarise:
+
+
+```r
+agg_flights &lt;- mini_flights %&gt;% mutate(ln_dist = log(distance)) %&gt;%
+	filter(month %in% 1:3) %&gt;% 
+	group_by(carrier, month) %&gt;% 
+	summarise(mean_del = mean(dep_delay, na.rm = TRUE),
+		mean_dist = mean(ln_dist, na.rm = TRUE))
+agg_flights
+```
+
+```
+## # A tibble: 46 x 4
+## # Groups:   carrier [16]
+##    carrier month mean_del mean_dist
+##    &lt;chr&gt;   &lt;int&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+##  1 9E          1   16.9        5.93
+##  2 9E          2   16.5        5.91
+##  3 9E          3   13.4        5.95
+##  4 AA          1    6.93       7.08
+##  5 AA          2    8.28       7.08
+##  6 AA          3    8.70       7.08
+##  7 AS          1    7.35       7.78
+##  8 AS          2    0.722      7.78
+##  9 AS          3    8.42       7.78
+## 10 B6          1    9.49       6.71
+## # … with 36 more rows
+```
+
+---
+
+Plot the data points:
+
+```r
+library(ggplot2)
+ggplot(agg_flights, aes(x = mean_dist, y = mean_del)) +
+	geom_point(aes(colour = carrier)) +
+	labs(x = "log(Flight distance)", y = "Delay")
+```
+
+![](450x_lecture2_files/figure-html/Plot-1.png)&lt;!-- --&gt;
+
+---
+
+# tidyr
+
+* Remember the tidy data exercise from last class?
+* .fn_highlight[pivot_longer()], .fn_highlight[pivot_wider()] for recasting data frames 
+* Sometimes data manipulation or visualisation is much simpler if you recast your data frame!
+* Can also be combined with `dplyr` calls and pipes
+
+---
+
+
+```r
+data("mtcars")
+mtcars %&gt;% head
+```
+
+```
+##                    mpg cyl disp  hp drat    wt  qsec vs am gear carb
+## Mazda RX4         21.0   6  160 110 3.90 2.620 16.46  0  1    4    4
+## Mazda RX4 Wag     21.0   6  160 110 3.90 2.875 17.02  0  1    4    4
+## Datsun 710        22.8   4  108  93 3.85 2.320 18.61  1  1    4    1
+## Hornet 4 Drive    21.4   6  258 110 3.08 3.215 19.44  1  0    3    1
+## Hornet Sportabout 18.7   8  360 175 3.15 3.440 17.02  0  0    3    2
+## Valiant           18.1   6  225 105 2.76 3.460 20.22  1  0    3    1
+```
+
+```r
+mtcars %&gt;% 
+	dplyr::select(mpg, cyl, disp) %&gt;% 
+	mutate(cartype = rownames(.)) %&gt;%
+	pivot_longer(mpg:disp) %&gt;% head(., n = 5)
+```
+
+```
+## # A tibble: 5 x 3
+##   cartype       name  value
+##   &lt;chr&gt;         &lt;chr&gt; &lt;dbl&gt;
+## 1 Mazda RX4     mpg      21
+## 2 Mazda RX4     cyl       6
+## 3 Mazda RX4     disp    160
+## 4 Mazda RX4 Wag mpg      21
+## 5 Mazda RX4 Wag cyl       6
+```
+
+---
+
+# More tidyverse things
+
+* `tidyverse` functions refer to variable names directly 
+    * (the dataframe is already piped in)
+    * `\(\rightarrow\)` more on quotations and quasi-quations in [Advanced R](https://adv-r.hadley.nz/)
+* Refer to piped object with .fn_highlight[.]
+* Refer to a range of variables (in order) with colon .fn_highlight[var1:var4]
+
+---
+
+# purrr
+
+* writing functions avoids repetition and provides clarity, e.g.,
+
+
+```r
+ols_coefs &lt;- function(x, y){
+	solve(t(x) %*% x) %*% t(x) %*% y
+}
+
+x &lt;- matrix(c(1, 2, 3, 5, 5, 6), nrow = 3, ncol = 2)
+y &lt;- matrix(c(8, 8.5, 0), nrow = 3, ncol = 1)
+ols_coefs(x, y)
+```
+
+```
+##           [,1]
+## [1,] -4.978261
+## [2,]  2.869565
+```
+
+---
+
+# purrr
+
+* applying functions to each row or element can be done with a for-loop or apply family
+    * you've probably done that already
+* .fn_highlight[map()] family provides even more convenient functions
+
+
+```r
+no_list &lt;- list(8, 16, 99)
+lapply(no_list, sqrt)
+```
+
+```
+## [[1]]
+## [1] 2.828427
+## 
+## [[2]]
+## [1] 4
+## 
+## [[3]]
+## [1] 9.949874
+```
+
+```r
+map(no_list, sqrt)
+```
+
+```
+## [[1]]
+## [1] 2.828427
+## 
+## [[2]]
+## [1] 4
+## 
+## [[3]]
+## [1] 9.949874
+```
+
+* Doesn't seem very useful yet...
+* Range of `map`-type functions in `purrr` that make life a lot easier!
+
+
+---
+
+# purrr makes your life easy!
+
+[Link to Example](https://jennybc.github.io/purrr-tutorial/ls01_map-name-position-shortcuts.html)
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();</script>
+
+<script>
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
