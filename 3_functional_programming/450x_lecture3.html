@@ -293,6 +293,151 @@ col_summary(df, value, mean, na.rm = TRUE)
 
 ---
 
+# Function factories
+
+* Functions can also produce *other* functions as output!
+* These things are sometimes called .fn_highlight[function factories].
+
+
+```r
+factory &lt;- function(x, y){
+	fm &lt;- paste0(y, " ~ ", x)
+	function(d){
+		lm(formula = fm, data = d)$coef
+	}
+}
+```
+
+---
+
+# Function factories (cont'd)
+
+
+```r
+car_reg &lt;- factory("mpg", "hp")
+car_reg(mtcars)
+```
+
+```
+## (Intercept)         mpg 
+##  324.082314   -8.829731
+```
+
+---
+
+# Function factories (cont'd)
+
+
+```r
+car_reg2 &lt;- factory("cyl", "wt")
+car_reg2(mtcars)
+```
+
+```
+## (Intercept)         cyl 
+##   0.5646195   0.4287080
+```
+
+---
+
+# Function factories (cont'd)
+
+* Will be very useful when doing bootstrapping or MLE estimation
+
+---
+
+# Recursion
+
+* Factorial example:
+
+`\(n! = n * (n - 1) * (n - 2) * ... * 1\)`
+
+* Use the property of recursion to make the function to refer to itself.
+---
+
+# Recursion (cont'd)
+
+* What's wrong with the definition as below?
+
+
+```r
+factorial_fn &lt;- function(n){
+	return(n * factorial_fn(n-1))
+}
+```
+
+---
+
+# Recursion (cont'd)
+
+* Let's fix it.
+
+
+```r
+factorial_fn &lt;- function(n){
+	if(n &lt;= 1){
+		return(1)
+	}
+	else{
+		return(n * factorial_fn(n-1))
+	}
+}
+```
+
+---
+
+# Recursion (cont'd)
+
+
+```r
+factorial_fn(5)
+```
+
+```
+## [1] 120
+```
+
+```r
+factorial_fn(4)
+```
+
+```
+## [1] 24
+```
+
+
+---
+
+# Problems with recursion
+
+* Not always the most efficient implementation...
+
+![](450x_lecture3_files/figure-html/unnamed-chunk-20-1.png)&lt;!-- --&gt;
+
+---
+
+# Further applications
+
+* Fibonacci sequence 
+`\(x_n = x_{n-1} + x_{n+2}\)`
+* Collatz conjecture (Syracuse Problem)
+* Sorting, searching, merging algorithms...
+
+---
+
+# Conclusion
+
+* More hands-on programming: what are the most efficient ways to solve a problem?
+* Functions are the bread-and-butter of intermediate and advanced programming
+* Highly recommended for replicability, tractability, and time saving.
+* Still, much more out there... (e.g., basic search algorithms)
+
+---
+
+# Next week
+
+* Parallel programming
+* Server-side scripts and working on the cluster
     </textarea>
 <style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
 <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
