@@ -1,0 +1,260 @@
+---
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+    css: ["style.css"]
+---
+
+class: center, middle
+
+# Parallel programming
+
+.course[450X]
+
+.institution[__Stanford University__ 
+
+Department of Political Science  
+  
+---  
+
+Toby Nowacki]
+
+---
+
+---
+
+# Overview
+
+1. Measuring speed
+2. Parallel programming (locally)
+3. Using Farmshare: basics
+4. Using Farmshare: shell scripts
+
+---
+
+# Measuring execution speed
+
+* Useful for benchmarking and troubleshooting
+* .fn_highlight[sys_time()] saves current computer time
+* .fn_highlight[system.time({ input })] as a wrapper
+
+```{r, cache = TRUE}
+test_function <- function(x){ Sys.sleep(x)}
+
+start <- Sys.time()
+test_function(10)
+end <- Sys.time()
+
+start - end
+system.time({test_function(10)})
+
+```
+
+---
+
+# Parallel processing
+
+(Pictures)
+
+---
+
+# Parallel processing
+
+* In `R`, use .fn_highlight[doParallel package].
+* .fn_highlight[makeCluster(n)] specifies the number of parallel processors to be set up
+* .fn_highlight[registerDoParallel(cluster)] sets them up in the backend
+* .fn_highlight[%dopar%] is a new operator for this kind of task
+
+---
+
+# A simple example
+
+* Setting up example with one core
+
+```{r, include = FALSE}
+library(tidyverse)
+```
+
+```{r, cache = TRUE}
+get_sample_dist <- function(n, x){
+	sample(x, size = n, replace = TRUE) %>% mean}
+
+rand_seq <- runif(100000, min = 1, max = 1000)
+n <- 1000
+rep_size <- 10:100
+
+one_core <- system.time({map(rep_size, ~ replicate(.x, get_sample_dist(n, rand_seq)))})
+```
+
+---
+
+# A simple example
+
+* Setting up parallel thread example
+
+```{r, cache = TRUE}
+library(doParallel)
+cl <- makeCluster(2)
+registerDoParallel(cl)
+two_cores <- system.time({foreach(i = rep_size, 
+               .packages = "tidyverse",
+           	   .combine = c) %dopar% {
+	replicate(i, get_sample_dist(n, rand_seq))
+	}
+})
+stopCluster(cl)
+```
+
+```{r include = FALSE, cache = TRUE}
+cl <- makeCluster(6)
+registerDoParallel(cl)
+six_cores <- system.time({foreach(i = rep_size, 
+               .packages = "tidyverse",
+           	   .combine = c) %dopar% {
+	replicate(i, get_sample_dist(n, rand_seq))
+	}
+})
+stopCluster(cl)
+```
+
+---
+
+# A simple example
+
+```{r}
+one_core
+two_cores
+six_cores
+```
+
+---
+
+# Bootstrap example
+
+* Bootstrapping example (taken from `doParallel` vignette)
+* Parallel processing
+
+```{r, include = FALSE}
+library(doParallel)
+cl <- makeCluster(6)
+registerDoParallel(cl)
+```
+
+```{r, cache = TRUE}
+cl <- makeCluster(6)
+registerDoParallel(cl)
+x <- iris[which(iris[, 5] != "setosa"), c(1,5)]
+trials <- 10000
+ptime <- system.time({
+	r <- foreach(icount(trials), 
+	             .combine=cbind) %dopar% {
+		ind <- sample(100, 100, replace=TRUE)
+		result1 <- glm(x[ind,2]~x[ind,1], family=binomial(logit))
+		coefficients(result1)
+	}
+})[3]
+ptime
+```
+
+---
+
+# Bootstrap example
+
+* Sequential processing
+
+```{r, cachce = TRUE}
+x <- iris[which(iris[, 5] != "setosa"), c(1,5)]
+trials <- 10000
+ptime <- system.time({
+	r <- foreach(icount(trials), 
+	             .combine=cbind) %do% {
+		ind <- sample(100, 100, replace=TRUE)
+		result1 <- glm(x[ind,2]~x[ind,1], family=binomial(logit))
+		coefficients(result1)
+	}
+})[3]
+ptime
+```
+
+---
+
+# Farmshare: logging in
+
+* Sherlock for high-performance computing, Farmshare for coursework
+* Login occurs through `Terminal`:
+
+```
+ssh username@rice.stanford.edu
+```
+
+* Folder navigation via .fn_highlight[cd] command
+* List of elements at current level via .fn_highlight[ls]
+
+* The same commands can be used to navigate on your local machine!
+
+---
+
+# Farmshare: running R
+
+* (Sherlock only:) in order to run `R` remotely on the server, need to load module:
+
+```
+ml R
+```
+
+* (Farmshare only:) no need to load module, `R` works if you call it from command line.
+
+---
+
+# Farmshare
+
+* to run a whole script remotely, best to define and run a `batch` job:
+
+```
+#!/bin/sh
+#SBATCH --time=20:00:00
+#SBATCH --mem=20000
+#SBATCH --cpus-per-task=4
+#SBATCH --job-name="test_iterations"
+#SBATCH --error=TestJob.%J.stderr
+#SBATCH --output=TestJob.%J.out
+#SBATCH --mail-user=toby.nowacki@gmail.com
+#SBATCH --mail-type=ALL
+#SBATCH --workdir=/home/tnowacki/strategic_voting
+
+
+Rscript code/iterations_v4.R
+```
+
+---
+
+# Farmshare
+
+* The file needs to be submitted to the job manager, `slurm`, as follows:
+
+```
+sbatch path_to_file/file.sh
+```
+
+* Can also specify options via command line. Multiple parameters defined in helpfile:
+
+```
+sbatch -p=bigmem path_to_file/file.sh
+sbatch -help
+```
+
+* Check on status of queued jobs as follows:
+
+```
+squeue -u username
+```
+
+* Cancel jobs as follows:
+
+```
+scancel jobname
+```
+---
+
